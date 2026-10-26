@@ -1,0 +1,25 @@
+{
+  "name": "pouchtrack",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PouchTrack - Real NFC-Based Factory Pouch Tracking Web App",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:https": "concurrently \"npm run dev:server\" \"npm run dev:client:https\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "dev:client:https": "npm --prefix client run dev:https",
+    "build": "npm --prefix server run build && npm --prefix client run build",
+    "db:generate": "npm --prefix server run db:generate",
+    "db:push": "npm --prefix server run db:push",
+    "db:seed": "npm --prefix server run db:seed",
+    "test": "npm --prefix server run test"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

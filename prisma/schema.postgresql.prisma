@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Pouch {
+  id                  String          @id @default(uuid())
+  serialNumber        String          @unique
+  batchNumber         String
+  pouchType           String          @default("Standard Industrial Pouch")
+  currentDepartmentId String
+  currentDepartment   Department      @relation(fields: [currentDepartmentId], references: [id])
+  currentCheckpointId String
+  currentCheckpoint   Checkpoint      @relation(fields: [currentCheckpointId], references: [id])
+  status              String          @default("Registered")
+  description         String?
+  tagProgrammed       Boolean         @default(false)
+  active              Boolean         @default(true)
+  registeredAt        DateTime        @default(now())
+  lastScannedAt       DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  movements           MovementEvent[]
+  alerts              Alert[]
+
+  @@index([serialNumber])
+  @@index([batchNumber])
+  @@index([status])
+  @@index([currentDepartmentId])
+  @@index([currentCheckpointId])
+}
+
+model Department {
+  id                 String          @id @default(uuid())
+  name               String          @unique
+  description        String?
+  active             Boolean         @default(true)
+  createdAt          DateTime        @default(now())
+
+  checkpoints        Checkpoint[]
+  currentPouches     Pouch[]
+  previousMovements  MovementEvent[] @relation("PreviousDepartment")
+  newMovements       MovementEvent[] @relation("NewDepartment")
+}
+
+model Checkpoint {
+  id                 String          @id @default(uuid())
+  name               String
+  departmentId       String
+  department         Department      @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  description        String?
+  active             Boolean         @default(true)
+  createdAt          DateTime        @default(now())
+
+  currentPouches     Pouch[]
+  previousMovements  MovementEvent[] @relation("PreviousCheckpoint")
+  newMovements       MovementEvent[] @relation("NewCheckpoint")
+  alerts             Alert[]
+
+  @@index([departmentId])
+  @@index([active])
+}
+
+model MovementEvent {
+  id                   String      @id @default(uuid())
+  pouchId              String
+  pouch                Pouch       @relation(fields: [pouchId], references: [id], onDelete: Cascade)
+  pouchSerialNumber    String
+  previousDepartmentId String?
+  previousDepartment   Department? @relation("PreviousDepartment", fields: [previousDepartmentId], references: [id])
+  previousCheckpointId String?
+  previousCheckpoint   Checkpoint? @relation("PreviousCheckpoint", fields: [previousCheckpointId], references: [id])
+  newDepartmentId      String
+  newDepartment        Department  @relation("NewDepartment", fields: [newDepartmentId], references: [id])
+  newCheckpointId      String
+  newCheckpoint        Checkpoint  @relation("NewCheckpoint", fields: [newCheckpointId], references: [id])
+  previousStatus       String?
+  newStatus            String
+  operatorName         String?
+  source               String      @default("phone_nfc") // "phone_nfc", "manual_entry", "simulator", "admin_correction"
+  result               String      @default("success")   // "success", "rejected", "warning"
+  notes                String?
+  idempotencyKey       String?     @unique
+  occurredAt           DateTime    @default(now())
+  createdAt            DateTime    @default(now())
+
+  @@index([pouchId])
+  @@index([pouchSerialNumber])
+  @@index([occurredAt])
+  @@index([result])
+}
+
+model Alert {
+  id               String      @id @default(uuid())
+  type             String      // "unregistered_tag", "invalid_ndef", "duplicate_movement", "unexpected_transition", "overdue_pouch", "inactive_pouch", "inactive_checkpoint", "backend_failure"
+  severity         String      @default("medium") // "low", "medium", "high", "critical"
+  pouchId          String?
+  pouch            Pouch?      @relation(fields: [pouchId], references: [id], onDelete: SetNull)
+  checkpointId     String?
+  checkpoint       Checkpoint? @relation(fields: [checkpointId], references: [id], onDelete: SetNull)
+  description      String
+  resolutionStatus String      @default("open") // "open", "in_review", "resolved", "dismissed"
+  resolutionNotes  String?
+  createdAt        DateTime    @default(now())
+  resolvedAt       DateTime?
+
+  @@index([type])
+  @@index([severity])
+  @@index([resolutionStatus])
+  @@index([createdAt])
+}
+
+model AuditEvent {
+  id         String   @id @default(uuid())
+  action     String   // "create", "update", "deactivate", "tag_programmed", "manual_correction"
+  entityType String   // "pouch", "department", "checkpoint", "movement", "alert"
+  entityId   String
+  details    String   // JSON string with audit payload
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}

@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Production Builds
+dist/
+*/dist/
+build/
+*/build/
+*.tsbuildinfo
+*/tsconfig.tsbuildinfo
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Database
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+prisma/*.db
+prisma/*.db-journal
+prisma/*.db-wal
+prisma/*.db-shm
+
+# IDE & OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Vite & Vitest
+.vite/
+*/.vite/
+coverage/
+*/coverage/
